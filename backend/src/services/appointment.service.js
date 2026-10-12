@@ -19,6 +19,7 @@ import {
   sendBookingConfirmation,
   sendRescheduleConfirmation,
   sendCancellationNotification,
+  sendSMS,
 } from "./notification.service.js";
 
 function createError(message, statusCode) {
@@ -250,6 +251,7 @@ export async function createAppointment({
     createdAppointment = appointment;
     bookingMeta = {
       customerEmail: customer?.email,
+      customerPhone: customer?.phone,
       customerName: customer?.name,
       serviceName: service.name,
       staffName: staff.user?.name,
@@ -258,7 +260,7 @@ export async function createAppointment({
     };
   });
 
-  // Asynchronously trigger confirmation email (don't block response on error)
+  // Asynchronously trigger confirmation email & SMS (don't block response on error)
   if (bookingMeta && bookingMeta.customerEmail) {
     sendBookingConfirmation({
       to: bookingMeta.customerEmail,
@@ -268,6 +270,13 @@ export async function createAppointment({
       startTime: bookingMeta.startTime,
       salonName: bookingMeta.salonName,
     }).catch((err) => console.error("Email send error:", err));
+  }
+
+  if (bookingMeta && bookingMeta.customerPhone) {
+    sendSMS({
+      to: bookingMeta.customerPhone,
+      body: `Hi ${bookingMeta.customerName || "Customer"}, your appointment for ${bookingMeta.serviceName} at ${bookingMeta.salonName} is confirmed for ${new Date(bookingMeta.startTime).toLocaleString("en-IN")}.`,
+    }).catch((err) => console.error("SMS send error:", err));
   }
 
   return createdAppointment;

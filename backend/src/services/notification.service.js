@@ -177,4 +177,42 @@ export async function sendAppointmentReminder({
     text: `Hello ${customerName}, this is a reminder for your upcoming appointment for ${serviceName} with ${staffName} on ${startTime}.`,
   });
 }
+export async function sendSMS({ to, body }) {
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  const fromNumber = process.env.TWILIO_PHONE_NUMBER;
 
+  if (!accountSid || !authToken || !fromNumber) {
+    console.log(`[Notification] Twilio SMS simulated (credentials not set) -> To: ${to} | Body: "${body}"`);
+    return { success: true, simulated: true };
+  }
+
+  try {
+    const endpoint = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+    const params = new URLSearchParams({
+      To: to,
+      From: fromNumber,
+      Body: body,
+    });
+
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Authorization": `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: params.toString(),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || `Twilio error status ${response.status}`);
+    }
+
+    console.log(`[Notification] SMS dispatched via Twilio to ${to}. SID: ${data.sid}`);
+    return { success: true, sid: data.sid };
+  } catch (error) {
+    console.error(`[Notification] Failed to send SMS to ${to}:`, error.message);
+    return { success: false, error: error.message };
+  }
+}

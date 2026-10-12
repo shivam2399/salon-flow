@@ -2,7 +2,7 @@ import cron from "node-cron";
 import { Op } from "sequelize";
 import { DateTime } from "luxon";
 import { Appointment, User, Service, StaffProfile, Salon } from "../models/index.js";
-import { sendAppointmentReminder } from "./notification.service.js";
+import { sendAppointmentReminder, sendSMS } from "./notification.service.js";
 
 // Keep track of appointments that were already reminded in memory
 const remindedAppointmentIds = new Set();
@@ -26,7 +26,7 @@ export async function processUpcomingReminders() {
         {
           model: User,
           as: "customer",
-          attributes: ["id", "name", "email"],
+          attributes: ["id", "name", "email", "phone"],
         },
         {
           model: Service,
@@ -67,6 +67,13 @@ export async function processUpcomingReminders() {
           startTime: appt.startTime,
           salonName: appt.salon?.name || "SalonFlow Studio",
         });
+
+        if (appt.customer?.phone) {
+          sendSMS({
+            to: appt.customer.phone,
+            body: `Reminder: You have an upcoming appointment for ${appt.service?.name || "Salon Service"} at ${appt.salon?.name || "SalonFlow"} at ${new Date(appt.startTime).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}.`,
+          }).catch((err) => console.error("SMS reminder error:", err.message));
+        }
 
         remindedAppointmentIds.add(appt.id);
         sentCount++;
