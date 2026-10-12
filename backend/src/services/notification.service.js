@@ -177,3 +177,4 @@ export async function sendAppointmentReminder({
     text: `Hello ${customerName}, this is a reminder for your upcoming appointment for ${serviceName} with ${staffName} on ${startTime}.`,
   });
 }
+

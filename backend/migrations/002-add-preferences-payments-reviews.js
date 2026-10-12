@@ -117,3 +117,4 @@ export async function down({ context: qi }) {
   await qi.dropTable("payments");
   await qi.removeColumn("users", "preferences");
 }
+

@@ -8,6 +8,8 @@ import {
   processPayment,
   createStripeSession,
   getAppointmentInvoice,
+  createRazorpayOrder as createRazorpayOrderService,
+  verifyRazorpayPayment as verifyRazorpayPaymentService,
 } from "../services/payment.service.js";
 
 export async function bookAppointment(req, res, next) {
@@ -102,6 +104,50 @@ export async function payAppointment(req, res, next) {
   }
 }
 
+// ------------------- RAZORPAY CONTROLLERS -------------------
+
+export async function createRazorpayOrder(req, res, next) {
+  try {
+    const appointmentId = Number(req.params.id);
+    const orderData = await createRazorpayOrderService({
+      appointmentId,
+      customerId: req.user.id,
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: orderData,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function verifyRazorpay(req, res, next) {
+  try {
+    const appointmentId = Number(req.params.id);
+    const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
+
+    const payment = await verifyRazorpayPaymentService({
+      appointmentId,
+      customerId: req.user.id,
+      razorpayOrderId,
+      razorpayPaymentId,
+      razorpaySignature,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Razorpay payment verified and recorded successfully",
+      data: { payment },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ------------------- STRIPE CONTROLLER -------------------
+
 export async function createStripeCheckout(req, res, next) {
   try {
     const appointmentId = Number(req.params.id);
@@ -118,6 +164,8 @@ export async function createStripeCheckout(req, res, next) {
     next(error);
   }
 }
+
+// ------------------- INVOICE CONTROLLER -------------------
 
 export async function downloadInvoice(req, res, next) {
   try {

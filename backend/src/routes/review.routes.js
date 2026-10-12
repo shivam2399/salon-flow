@@ -13,3 +13,4 @@ router.post("/", requireAuth, submitReview);
 router.post("/:id/response", requireAuth, requireRole("admin", "staff"), replyToReview);
 
 export default router;
+

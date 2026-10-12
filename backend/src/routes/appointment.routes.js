@@ -6,6 +6,8 @@ import {
   cancel,
   reschedule,
   payAppointment,
+  createRazorpayOrder,
+  verifyRazorpay,
   createStripeCheckout,
   downloadInvoice,
 } from "../controllers/appointment.controller.js";
@@ -40,6 +42,8 @@ router.patch(
 // Payment & Invoice endpoints
 router.post("/:id/pay", requireAuth, payAppointment);
 router.post("/:id/payment", requireAuth, payAppointment);
+router.post("/:id/razorpay/order", requireAuth, createRazorpayOrder);
+router.post("/:id/razorpay/verify", requireAuth, verifyRazorpay);
 router.post("/:id/stripe-session", requireAuth, createStripeCheckout);
 router.get("/:id/invoice", requireAuth, downloadInvoice);
 

@@ -417,6 +417,47 @@ export const swaggerSpec = {
         responses: { 200: { description: "Payment recorded successfully" } },
       },
     },
+    "/appointments/{id}/razorpay/order": {
+      post: {
+        summary: "Create a Razorpay order for appointment payment",
+        tags: ["Payments & Invoices (Razorpay)"],
+        security: [{ bearerAuth: [] }],
+        parameters: [{ in: "path", name: "id", required: true, schema: { type: "integer" } }],
+        responses: {
+          200: {
+            description: "Razorpay order details with orderId and keyId",
+          },
+        },
+      },
+    },
+    "/appointments/{id}/razorpay/verify": {
+      post: {
+        summary: "Verify Razorpay payment signature and record completed payment",
+        tags: ["Payments & Invoices (Razorpay)"],
+        security: [{ bearerAuth: [] }],
+        parameters: [{ in: "path", name: "id", required: true, schema: { type: "integer" } }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["razorpayOrderId", "razorpayPaymentId", "razorpaySignature"],
+                properties: {
+                  razorpayOrderId: { type: "string", example: "order_DBJOWzybf0sJbb" },
+                  razorpayPaymentId: { type: "string", example: "pay_29QQoUBi66xm2f" },
+                  razorpaySignature: { type: "string", example: "9ef47070b4317769cbdd..." },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: "Razorpay payment verified and recorded" },
+          400: { description: "Invalid signature" },
+        },
+      },
+    },
     "/appointments/{id}/stripe-session": {
       post: {
         summary: "Create Stripe checkout session for online card payment",
@@ -618,3 +659,4 @@ export const swaggerSpec = {
     },
   },
 };
+

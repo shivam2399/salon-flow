@@ -179,22 +179,98 @@ export default function AppointmentsPage() {
     }
   }
 
-  // Handle Pay Online
-  async function handlePayOnline(appointment) {
+  function loadRazorpayScript() {
+    return new Promise((resolve) => {
+      if (typeof window !== "undefined" && window.Razorpay) {
+        return resolve(true);
+      }
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  }
+
+  // Handle Razorpay Payment
+  async function handlePayRazorpay(appointment) {
     setPayingId(appointment.id);
     setError("");
+    setMessage("");
 
     try {
-      const res = await apiFetch(`/appointments/${appointment.id}/pay`, {
+      // 1. Create order on backend
+      const res = await apiFetch(`/appointments/${appointment.id}/razorpay/order`, {
         method: "POST",
-        body: JSON.stringify({
-          paymentMethod: "stripe",
-          transactionId: `stripe_txn_${Date.now()}`,
-        }),
       });
 
-      setMessage("Payment processed successfully! Invoice is now ready for download.");
-      await loadAppointments();
+      const orderData = res?.data;
+      if (!orderData) {
+        throw new Error("Could not initialize Razorpay order.");
+      }
+
+      // If in mock / test development mode without live keys
+      if (orderData.isMock) {
+        // Verify mock payment directly
+        await apiFetch(`/appointments/${appointment.id}/razorpay/verify`, {
+          method: "POST",
+          body: JSON.stringify({
+            razorpayOrderId: orderData.orderId,
+            razorpayPaymentId: `pay_mock_${Date.now()}`,
+            razorpaySignature: "mock_signature_dev",
+          }),
+        });
+
+        setMessage("Payment completed successfully via Razorpay (Dev Simulation)! Tax invoice is ready.");
+        await loadAppointments();
+        return;
+      }
+
+      // 2. Load Razorpay Checkout SDK for live/test keys
+      const loaded = await loadRazorpayScript();
+      if (!loaded) {
+        throw new Error("Razorpay SDK failed to load. Please check your internet connection.");
+      }
+
+      const options = {
+        key: orderData.keyId,
+        amount: orderData.amount,
+        currency: orderData.currency || "INR",
+        name: "SalonFlow",
+        description: `Payment for ${getServiceName(appointment)}`,
+        order_id: orderData.orderId,
+        handler: async function (response) {
+          try {
+            await apiFetch(`/appointments/${appointment.id}/razorpay/verify`, {
+              method: "POST",
+              body: JSON.stringify({
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
+              }),
+            });
+
+            setMessage("Payment completed successfully via Razorpay! Tax invoice is ready.");
+            await loadAppointments();
+          } catch (verifyErr) {
+            setError(getErrorMessage(verifyErr));
+          }
+        },
+        prefill: {
+          name: appointment.customer?.name || "Customer",
+          email: appointment.customer?.email || "",
+          contact: appointment.customer?.phone || "",
+        },
+        theme: {
+          color: "#e11d48",
+        },
+      };
+
+      const razorpayInstance = new window.Razorpay(options);
+      razorpayInstance.on("payment.failed", function (response) {
+        setError(`Payment failed: ${response.error.description}`);
+      });
+      razorpayInstance.open();
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -412,11 +488,11 @@ export default function AppointmentsPage() {
                       {!isPaid && status !== "cancelled" && (
                         <button
                           type="button"
-                          onClick={() => handlePayOnline(appointment)}
+                          onClick={() => handlePayRazorpay(appointment)}
                           disabled={payingId === appointment.id}
                           className="rounded-full bg-stone-900 px-4 py-2 text-xs font-semibold text-white hover:bg-rose-600 disabled:opacity-50"
                         >
-                          {payingId === appointment.id ? "Processing..." : "💳 Pay Online (Stripe)"}
+                          {payingId === appointment.id ? "Processing..." : "💳 Pay with Razorpay"}
                         </button>
                       )}
 

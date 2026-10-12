@@ -96,3 +96,4 @@ export function startReminderCronJob() {
   console.log(`[Cron Reminder] Appointment reminder cron job scheduled with pattern: ${schedule}`);
   return job;
 }
+

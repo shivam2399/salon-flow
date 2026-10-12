@@ -118,3 +118,4 @@ For multi-instance horizontal scaling, you can optionally configure an **AWS Eve
 - [ ] RDS security group allows incoming port 3306 traffic only from the ECS/Beanstalk security group.
 - [ ] Database credentials and JWT secrets stored in **AWS Secrets Manager** or **Systems Manager Parameter Store**.
 - [ ] Custom domain linked with **Route 53** and free SSL certificates provisioned via **AWS Certificate Manager (ACM)**.
+

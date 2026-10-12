@@ -448,7 +448,60 @@ Includes service, staff, payment details, and review status.
 
 ## 6. Payments & Invoicing
 
-### 6.1 Process Online Payment
+### 6.1 Create Razorpay Order
+- **URL:** `/appointments/:id/razorpay/order`
+- **Method:** `POST`
+- **Auth Required:** Yes
+- **Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "keyId": "rzp_test_xxxxxxx",
+    "orderId": "order_DBJOWzybf0sJbb",
+    "amount": 50000,
+    "currency": "INR",
+    "appointmentId": 10
+  }
+}
+```
+
+---
+
+### 6.2 Verify Razorpay Payment Signature
+- **URL:** `/appointments/:id/razorpay/verify`
+- **Method:** `POST`
+- **Auth Required:** Yes
+- **Request Body:**
+```json
+{
+  "razorpayOrderId": "order_DBJOWzybf0sJbb",
+  "razorpayPaymentId": "pay_29QQoUBi66xm2f",
+  "razorpaySignature": "9ef47070b4317769cbdd656b27e8a93947b...generated_hmac_sha256"
+}
+```
+- **Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Razorpay payment verified and recorded successfully",
+  "data": {
+    "payment": {
+      "id": 1,
+      "appointmentId": 10,
+      "amountPaise": 50000,
+      "paymentMethod": "razorpay",
+      "status": "completed",
+      "transactionId": "pay_29QQoUBi66xm2f",
+      "invoiceNumber": "INV-2026-00010"
+    }
+  }
+}
+```
+
+---
+
+### 6.3 Process Online Payment (General)
 - **URL:** `/appointments/:id/pay`
 - **Method:** `POST`
 - **Auth Required:** Yes
@@ -462,7 +515,7 @@ Includes service, staff, payment details, and review status.
 
 ---
 
-### 6.2 Create Stripe Checkout Session
+### 6.4 Create Stripe Checkout Session
 - **URL:** `/appointments/:id/stripe-session`
 - **Method:** `POST`
 - **Auth Required:** Yes
@@ -587,3 +640,4 @@ Includes service, staff, payment details, and review status.
 - **Method:** `POST`
 - **Auth Required:** Yes (Role: `admin`)
 - **Notes:** Scans for upcoming appointments within the next 24 hours and dispatches email reminders.
+

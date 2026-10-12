@@ -29,3 +29,4 @@ router.put("/business-hours", updateBusinessHours);
 router.post("/reminders/trigger", triggerReminders);
 
 export default router;
+
