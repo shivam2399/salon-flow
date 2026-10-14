@@ -39,11 +39,22 @@ async function getTransporter() {
   return transporter;
 }
 
+function getFromAddress() {
+  const raw = (process.env.EMAIL_FROM || '"SalonFlow Studio" <no-reply@salonflow.com>').trim();
+  if (!raw.includes("<") && raw.includes(" ")) {
+    const parts = raw.split(/\s+/);
+    const emailPart = parts.pop();
+    const namePart = parts.join(" ").replace(/"/g, "");
+    return `"${namePart}" <${emailPart}>`;
+  }
+  return raw;
+}
+
 export async function sendEmail({ to, subject, html, text, attachments = [] }) {
   try {
     const mailer = await getTransporter();
     const info = await mailer.sendMail({
-      from: process.env.EMAIL_FROM || '"SalonFlow" <no-reply@salonflow.com>',
+      from: getFromAddress(),
       to,
       subject,
       text,
