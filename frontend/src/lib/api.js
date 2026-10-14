@@ -1,5 +1,17 @@
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+export function getApiUrl() {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  if (typeof window !== "undefined") {
+    // If running in browser and on a non-3000 port (e.g. EC2 on port 80/443), default to relative /api
+    if (window.location.port !== "3000") {
+      return "/api";
+    }
+  }
+  return "http://localhost:5000/api";
+}
+
+const API_URL = getApiUrl();
 
 export function getToken() {
   if (typeof window === "undefined") return null;
@@ -23,7 +35,7 @@ export async function apiFetch(path, options = {}) {
     ...options.headers,
   };
 
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await fetch(`${getApiUrl()}${path}`, {
     ...options,
     headers,
     cache: "no-store",
